@@ -6,5 +6,5 @@
 package findfont
 
 func getFontDirectories() (paths []string) {
-	return []string{expandUser("~/Library/Fonts/", "/Library/Fonts/")}
+	return []string{expandUser("~/Library/Fonts/"), "/Library/Fonts/"}
 }
