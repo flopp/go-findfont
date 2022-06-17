@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -26,6 +27,15 @@ func Find(fileName string) (filePath string, err error) {
 	return find(filepath.Base(fileName))
 }
 
+func getFontDirectoriesByOS() []string {
+	switch runtime.GOOS {
+	case "android":
+		return []string{"/system/fonts"}
+	default:
+		return getFontDirectories()
+	}
+}
+
 // List returns a list of all font files found on the system.
 func List() (filePaths []string) {
 	pathList := []string{}
@@ -38,7 +48,7 @@ func List() (filePaths []string) {
 		}
 		return nil
 	}
-	for _, dir := range getFontDirectories() {
+	for _, dir := range getFontDirectoriesByOS() {
 		filepath.Walk(dir, walkF)
 	}
 
@@ -99,7 +109,7 @@ func find(needle string) (filePath string, err error) {
 		return nil
 	}
 
-	for _, dir := range getFontDirectories() {
+	for _, dir := range getFontDirectoriesByOS() {
 		filepath.Walk(dir, walkF)
 		if match != "" {
 			return match, nil
