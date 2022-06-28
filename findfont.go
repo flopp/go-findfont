@@ -18,13 +18,17 @@ import (
 // well as in platform specific user and system font directories; if there is
 // no exact match, Find tries substring matching.
 func Find(fileName string) (filePath string, err error) {
+	return FindWtSuffixes(nil, fileName)
+}
+
+func FindWtSuffixes(suffixes []string, fileName string) (filePath string, err error) {
 	// check if fileName already points to a readable file
 	if _, err := os.Stat(fileName); err == nil {
 		return fileName, nil
 	}
 
 	// search in user and system directories
-	return find(filepath.Base(fileName))
+	return find(suffixes, filepath.Base(fileName))
 }
 
 func getFontDirectoriesByOS() []string {
@@ -38,11 +42,15 @@ func getFontDirectoriesByOS() []string {
 
 // List returns a list of all font files found on the system.
 func List() (filePaths []string) {
+	return ListWtSuffixes(nil)
+}
+
+func ListWtSuffixes(suffixes []string) (filePaths []string) {
 	pathList := []string{}
 
 	walkF := func(path string, info os.FileInfo, err error) error {
 		if err == nil {
-			if info.IsDir() == false && isFontFile(path) {
+			if info.IsDir() == false && isFontFile(suffixes, path) {
 				pathList = append(pathList, path)
 			}
 		}
@@ -55,9 +63,17 @@ func List() (filePaths []string) {
 	return pathList
 }
 
-func isFontFile(fileName string) bool {
+func isFontFile(suffixes []string, fileName string) bool {
 	lower := strings.ToLower(fileName)
-	return strings.HasSuffix(lower, ".ttf") || strings.HasSuffix(lower, ".ttc") || strings.HasSuffix(lower, ".otf")
+	if suffixes == nil {
+		suffixes = []string{".ttf", ".ttc", ".otf"}
+	}
+	for _, suf := range suffixes {
+		if strings.HasSuffix(lower, suf) {
+			return true
+		}
+	}
+	return false
 }
 
 func stripExtension(fileName string) string {
@@ -73,7 +89,7 @@ func expandUser(path string) (expandedPath string) {
 	return path
 }
 
-func find(needle string) (filePath string, err error) {
+func find(suffixes []string, needle string) (filePath string, err error) {
 	lowerNeedle := strings.ToLower(needle)
 	lowerNeedleBase := stripExtension(lowerNeedle)
 
@@ -92,7 +108,7 @@ func find(needle string) (filePath string, err error) {
 
 		lowerPath := strings.ToLower(info.Name())
 
-		if info.IsDir() == false && isFontFile(lowerPath) {
+		if info.IsDir() == false && isFontFile(suffixes, lowerPath) {
 			lowerBase := stripExtension(lowerPath)
 			if lowerPath == lowerNeedle {
 				// exact match
